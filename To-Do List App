@@ -1,0 +1,108 @@
+Steps to Build the To-Do List App
+Step 1: Set up the Django Project
+Install Django and start a new project:
+
+bash:-
+django-admin startproject todo_project
+cd todo_project
+Create a new app:
+
+bash:-
+python manage.py startapp tasks
+Add the app to settings.py: In todo_project/settings.py, add 'tasks', to the INSTALLED_APPS list.
+
+Step 2: Create the Task Model
+Edit tasks/models.py:
+
+python:-
+from django.db import models
+
+class Task(models.Model):
+    title = models.CharField(max_length=200)
+    completed = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.title
+Run migrations:
+
+bash:-
+python manage.py makemigrations
+python manage.py migrate
+Step 3: Create Views for Task Operations
+Edit tasks/views.py:
+
+python:-
+from django.shortcuts import render, redirect
+from .models import Task
+
+def task_list(request):
+    tasks = Task.objects.all()
+    if request.method == 'POST':
+        new_task = request.POST.get('title')
+        if new_task:
+            Task.objects.create(title=new_task)
+        return redirect('/')
+    return render(request, 'tasks/task_list.html', {'tasks': tasks})
+
+def delete_task(request, task_id):
+    task = Task.objects.get(id=task_id)
+    task.delete()
+    return redirect('/')
+Step 4: Create URLs for the App
+Create tasks/urls.py:
+
+python:-
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.task_list, name='task_list'),
+    path('delete/<int:task_id>/', views.delete_task, name='delete_task'),
+]
+Include the app URLs in todo_project/urls.py:
+
+python:-
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', include('tasks.urls')),  # Include tasks app URLs
+]
+Step 5: Create a Template for the Task List
+Create a templates/tasks folder inside the tasks app, then create task_list.html:
+
+html:-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+</head>
+<body>
+    <h1>To-Do List</h1>
+    <form method="post">
+        {% csrf_token %}
+        <input type="text" name="title" placeholder="Enter a new task" required>
+        <button type="submit">Add Task</button>
+    </form>
+
+    <ul>
+        {% for task in tasks %}
+            <li>
+                {{ task.title }}
+                <a href="{% url 'delete_task' task.id %}">Delete</a>
+            </li>
+        {% empty %}
+            <li>No tasks yet!</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
+Step 6: Run the Server
+Run the server:
+
+bash:-
+python manage.py runserver
+Open the browser at http://127.0.0.1:8000/ to use your to-do list.
